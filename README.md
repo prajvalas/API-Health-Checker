@@ -7,7 +7,7 @@ Checks if an API endpoint is up or down, every 15 seconds
 3. Navigate to the directory where the project files are present using `cd API-Health-Checker`
 4. Install dependencies using `pip install -r requirements.txt` for python or `pip3 install -r requirements.txt` for python3
 5. Run the code using the command `python main.py` for python or `python3 main.py` for python3
-6. On entering this, you'll be prompted to enter the file path for your input file. Enter the path as such `/Users/username/Desktop/input.yml` and hit Enter
+6. On entering this, you'll be prompted to enter the file path for your input file. Enter the path, for example `input.yml` if it is in the same directory as the code or `/Users/username/Desktop/input.yml` if it on the desktop and hit Enter
 
 **How it works**
 It performs a health check for all API endpoints mentioned in the input file.
@@ -31,4 +31,4 @@ For Run 1 --> fetch.com had 2/3 successful responses
 For Run 2 --> fetch.com had 4/6 successful responses
                 www.fetchrewards.com had 1/2 successful responses
 
-Successful response is the one where the response code is between 200 and 299 (inclusive) and response latency is <0.5s
+A successful response is the one where the response code is between 200 and 299 (inclusive) and response latency is <0.5s
