@@ -14,6 +14,8 @@ It performs a health check for all API endpoints mentioned in the input file.
 Execution ends when the user terminates the program execution using CTRL+C keys.
 
 A health check is performed every 15 seconds and the below is printed to the console.
+
+```
     Run 1
     fetch.com has 67% availability percentage
     www.fetchrewards.com has 0% availability percentage
@@ -21,6 +23,7 @@ A health check is performed every 15 seconds and the below is printed to the con
     Run 2
     fetch.com has 67% availability percentage
     www.fetchrewards.com has 50% availability percentage
+```
 
 In the above sample output, 
 For Run 1 --> fetch.com had 2/3 successful responses
