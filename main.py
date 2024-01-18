@@ -4,7 +4,72 @@ import time
 from urllib.parse import urlparse
 from decouple import config
 
+class ConfigReader:
+    @staticmethod
+    def read_input():
+        '''
+        This method reads the input from the input file using the `file_path` entered.
+        Returns - 
+            FileContent : if the data was retrieved from the file without any errors
+            None : if the data was not retrieved from the file due to an error
+        '''
+        try:
+            file_path = input("Enter the file path: ")
+            with open(file_path, 'r') as file:
+                return yaml.safe_load(file)
+        except Exception as e:
+            print(f"Error when reading the input file: {e}")
+            return None
+
+class ApiRequester:
+    @staticmethod
+    def make_request(method, url, headers):
+        '''
+        This method makes an API call using the parameters passed.
+        Returns - 
+            ResponseCode : if the api responded within the specified time without any errors
+            None : if the api did not response within the specified time or resulted in an error
+        '''
+        try:
+            response = requests.request(method, url, headers=headers, timeout=0.5)
+            return response.status_code
+        except requests.RequestException as e:
+            return None
+
 class HealthCheck:
+    def __init__(self, data):
+        self.data = data
+        self.runs = 1
+
+    def calculate_availability(self):
+        for api_data in self.data:
+            headers = api_data.get('headers', {})
+            method = api_data.get('method', 'GET').upper()
+            if method not in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']:
+                print(f"Warning: Invalid HTTP method '{method}' specified. Defaulting to 'GET'")
+                method = 'GET'
+
+            url = api_data.get('url', '')
+
+            response = ApiRequester.make_request(method, url, headers)
+            domain = urlparse(url).netloc
+
+            if domain not in self.executions:
+                self.executions[domain] = 0
+            self.executions[domain] += 1
+
+            if domain not in self.availability:
+                self.availability[domain] = 0
+            if response is not None and 200 <= response < 300:
+                self.availability[domain] += 1
+
+        # print(self.availability)
+        # print(self.executions)
+
+        for domain, ups in self.availability.items():
+            divisor = self.executions[domain]
+            print(f"{domain} has {round(100 * (ups / divisor))}% availability percentage")
+
     def health_check(self):
         '''
         This method is only called if valid data exists in the input file.
@@ -31,79 +96,29 @@ class HealthCheck:
         '''
 
         interval = config('INTERVAL')
-        availibility = {}
-        executions = {}
-        runs = 1
+        self.availability = {}
+        self.executions = {}
 
         while True:
-            print(f"Run {runs}")
-            for index,d in enumerate(self.data):
-                headers = d.get('headers', {})
-                method = d.get('method', 'GET')
-                name = d.get('name', '')
-                url = d.get('url', '')
-
-                start = time.time()
-                try:
-                    response = requests.request(method, url, headers=headers).status_code
-                except Exception as e:
-                    print(f"Error encountered when calling the API --- {e}")
-                    return
-                end = time.time()
-            
-                # print(f"{name} - Response : {response}, Latency : {end-start}")
-
-                domain = urlparse(url).netloc
-            
-                if domain not in executions:
-                    executions[domain] = 0
-                executions[domain] += 1
-
-                if domain not in availibility:
-                    availibility[domain] = 0
-                if (200 <= response < 300) and (end-start < 0.5):
-                    availibility[domain] += 1
-                
-            # print(availibility)
-            # print(executions)
-
-            for domain,ups in availibility.items():
-                divisor = executions[domain]
-                print(f"{domain} has {round(100*(ups/divisor))}% availability percentage")
-
+            print(f"Run {self.runs}")
+            self.calculate_availability()
             time.sleep(int(interval))
-            runs = runs+1
+            self.runs += 1
             print()
 
-    def read_input(self):
+class Application:
+    @staticmethod
+    def main():
         '''
-        This method reads the input from the input file using the `file_path` entered.
-        Returns - 
-            True : if the data was retrieved from the file without any errors
-            False : if the data was not retrieved from the file due to an error
-        '''
-
-        try:
-            file_path = input("Enter the file path : ")
-            with open(file_path, 'r') as file:
-                self.data = yaml.safe_load(file)
-            return True
-        except Exception as e:
-            print("Error when reading the input_file")
-            return False
-
-    def main(self):
-        '''
-        This method calls first reads the input and only if valid data is returned,
+        This method first reads the input and only if valid data is returned,
         it performs a health check on all the API endpoints
         '''
-
-        if self.read_input() and self.data:
-            self.health_check()
+        data = ConfigReader.read_input()
+        if data:
+            health_check = HealthCheck(data)
+            health_check.health_check()
         else:
             print("Invalid or empty input file.")
 
 if __name__ == "__main__":
-    ping = HealthCheck()
-    ping.main()
-    
+    Application.main()
